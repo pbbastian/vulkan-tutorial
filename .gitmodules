@@ -1,0 +1,6 @@
+[submodule "vendor/stb"]
+	path = vendor/stb
+	url = git@github.com:nothings/stb.git
+[submodule "vendor/Vulkan-Hpp"]
+	path = vendor/Vulkan-Hpp
+	url = git@github.com:KhronosGroup/Vulkan-Hpp.git
