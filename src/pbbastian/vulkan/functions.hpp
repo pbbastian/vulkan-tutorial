@@ -1,6 +1,9 @@
 #pragma once
-#include <vulkan/vulkan.h>
 
+#include <vulkan/vulkan.hpp>
+
+namespace pbbastian {
+namespace vulkan {
 inline VkResult CreateDebugReportCallbackEXT(
     VkInstance instance, const VkDebugReportCallbackCreateInfoEXT *pCreateInfo,
     const VkAllocationCallbacks *pAllocator,
@@ -15,12 +18,14 @@ inline VkResult CreateDebugReportCallbackEXT(
 }
 
 inline void
-vkDestroyDebugReportCallbackEXT(VkInstance instance,
-                                VkDebugReportCallbackEXT callback,
-                                const VkAllocationCallbacks *pAllocator) {
+DestroyDebugReportCallbackEXT(VkInstance instance,
+                              VkDebugReportCallbackEXT callback,
+                              const VkAllocationCallbacks *pAllocator) {
   auto func = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(
       vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
   if (func != nullptr) {
     func(instance, callback, pAllocator);
   }
+}
+}
 }
