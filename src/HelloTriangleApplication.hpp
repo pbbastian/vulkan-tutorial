@@ -96,6 +96,7 @@ private:
   vkp::UniqueObject<vk::Image> textureImage{device};
   vkp::UniqueObject<vk::DeviceMemory> textureImageMemory{device};
   vkp::UniqueObject<vk::ImageView> textureImageView{device};
+  vkp::UniqueObject<vk::Sampler> textureSampler{device};
 
   vkp::UniqueObject<vk::Buffer> vertexBuffer{device};
   vkp::UniqueObject<vk::DeviceMemory> vertexBufferMemory{device};
@@ -141,6 +142,8 @@ private:
     createFramebuffers();
     createCommandPool();
     createTextureImage();
+    createTextureImageView();
+    createTextureSampler();
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffer();
@@ -382,29 +385,8 @@ private:
     for (uint32_t i = 0; i < swapChainImages.size(); i++) {
       swapChainImageViews.emplace_back(
           vkp::UniqueObject<vk::ImageView>{device});
-
-      vk::ImageViewCreateInfo createInfo;
-      createInfo.image = swapChainImages[i];
-
-      createInfo.viewType = vk::ImageViewType::e2D;
-      createInfo.format = swapChainImageFormat;
-
-      createInfo.components.r = vk::ComponentSwizzle::eIdentity;
-      createInfo.components.g = vk::ComponentSwizzle::eIdentity;
-      createInfo.components.b = vk::ComponentSwizzle::eIdentity;
-      createInfo.components.a = vk::ComponentSwizzle::eIdentity;
-
-      createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-      createInfo.subresourceRange.baseMipLevel = 0;
-      createInfo.subresourceRange.levelCount = 1;
-      createInfo.subresourceRange.baseArrayLayer = 0;
-      createInfo.subresourceRange.layerCount = 1;
-
-      if (device->createImageView(&createInfo, nullptr,
-                                  &swapChainImageViews[i]) !=
-          vk::Result::eSuccess) {
-        throw std::runtime_error("failed to create image views!");
-      }
+      createImageView(swapChainImages[i], swapChainImageFormat,
+                      swapChainImageViews[i]);
     }
   }
 
@@ -676,6 +658,52 @@ private:
               static_cast<uint32_t>(texHeight));
     transitionImageLayout(textureImage, vk::ImageLayout::eTransferDstOptimal,
                           vk::ImageLayout::eShaderReadOnlyOptimal);
+  }
+
+  void createTextureImageView() {
+    createImageView(textureImage, vk::Format::eR8G8B8A8Unorm, textureImageView);
+  }
+
+  void createTextureSampler() {
+    auto samplerInfo = vk::SamplerCreateInfo{};
+    samplerInfo.magFilter = vk::Filter::eLinear;
+    samplerInfo.minFilter = vk::Filter::eLinear;
+    samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+    samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+    samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+    samplerInfo.anisotropyEnable = true;
+    samplerInfo.maxAnisotropy = 16;
+    samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
+    samplerInfo.unnormalizedCoordinates = false;
+    samplerInfo.compareEnable = false;
+    samplerInfo.compareOp = vk::CompareOp::eAlways;
+    samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    if (device->createSampler(&samplerInfo, nullptr, &textureSampler) !=
+        vk::Result::eSuccess) {
+      throw std::runtime_error("failed to create texture sampler!");
+    }
+  }
+
+  void createImageView(vk::Image image, vk::Format format,
+                       vkp::UniqueObject<vk::ImageView> &imageView) {
+    auto viewInfo = vk::ImageViewCreateInfo{};
+    viewInfo.image = image;
+    viewInfo.viewType = vk::ImageViewType::e2D;
+    viewInfo.format = format;
+    viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    if (device->createImageView(&viewInfo, nullptr, &imageView) !=
+        vk::Result::eSuccess) {
+      throw std::runtime_error("failed to create texture image view!");
+    }
   }
 
   void createImage(uint32_t width, uint32_t height, vk::Format format,

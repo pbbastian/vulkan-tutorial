@@ -55,5 +55,7 @@ template <> struct ObjectOwner<vk::DescriptorPool> : DeviceObjectOwner {};
 template <> struct ObjectOwner<vk::Semaphore> : DeviceObjectOwner {};
 
 template <> struct ObjectOwner<vk::ShaderModule> : DeviceObjectOwner {};
+
+template <> struct ObjectOwner<vk::Sampler> : DeviceObjectOwner {};
 }
 }

@@ -100,5 +100,10 @@ inline void destroy(const vk::Device device, vk::Framebuffer framebuffer,
                     const vk::AllocationCallbacks *pAllocator) {
   device.destroyFramebuffer(framebuffer, pAllocator);
 }
+
+inline void destroy(const vk::Device device, vk::Sampler sampler,
+                    const vk::AllocationCallbacks *pAllocator) {
+  device.destroySampler(sampler, pAllocator);
+}
 }
 }
