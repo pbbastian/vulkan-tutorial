@@ -9,9 +9,7 @@ namespace vulkan {
 
 template <typename ObjectT, typename OwnerT> class BaseUniqueObject {
 public:
-  BaseUniqueObject(
-      const BaseUniqueObject<OwnerT, typename ObjectOwner<OwnerT>::Type> &owner,
-      ObjectT object = ObjectT())
+  BaseUniqueObject(const OwnerT &owner, ObjectT object = ObjectT())
       : owner(owner), object(object) {}
 
   // Destructor
@@ -64,7 +62,7 @@ public:
   ObjectT *operator->() { return &object; }
 
 private:
-  const BaseUniqueObject<OwnerT, typename ObjectOwner<OwnerT>::Type> &owner;
+  const OwnerT &owner;
   ObjectT object;
 
   void cleanup() {
