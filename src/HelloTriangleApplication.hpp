@@ -379,9 +379,6 @@ private:
   }
 
   void createImageViews() {
-    //    swapChainImageViews.resize(swapChainImages.size(),
-    //                               vkp::UniqueObject<vk::ImageView>{device});
-
     for (uint32_t i = 0; i < swapChainImages.size(); i++) {
       swapChainImageViews.emplace_back(
           vkp::UniqueObject<vk::ImageView>{device});
@@ -614,9 +611,6 @@ private:
   }
 
   void createFramebuffers() {
-    //    swapChainFramebuffers.resize(swapChainImageViews.size(),
-    //                                 vkp::UniqueObject<vk::Framebuffer>{device});
-
     for (size_t i = 0; i < swapChainImageViews.size(); i++) {
       swapChainFramebuffers.emplace_back(
           vkp::UniqueObject<vk::Framebuffer>{device});
@@ -665,7 +659,7 @@ private:
 
     auto data = device->mapMemory(stagingImageMemory, 0, imageSize);
     memcpy(data.value, pixels.get(), static_cast<size_t>(imageSize));
-    static_cast<vk::Device>(device).unmapMemory(stagingImageMemory);
+    device->unmapMemory(stagingImageMemory);
 
     createImage(
         static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight),
