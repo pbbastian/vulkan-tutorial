@@ -30,11 +30,11 @@ target_sources(vulkan-tutorial PUBLIC
     src/vkFunctions.hpp
     src/VMappedMemory.hpp
     src/pbbastian/stbi.hpp
-    src/pbbastian/vulkan/unique_object.hpp
-    src/pbbastian/vulkan/deleter_function.hpp
+    src/pbbastian/vulkan/UniqueObject.hpp
+    src/pbbastian/vulkan/destroy.hpp
     src/pbbastian/vulkan/util.hpp
     src/pbbastian/vulkan/functions.hpp
-    src/pbbastian/vulkan/native_type.hpp)
+    src/pbbastian/vulkan/ObjectOwner.hpp)
 #target_compile_features(vulkan-tutorial )
 target_include_directories(vulkan-tutorial
     PUBLIC
@@ -54,4 +54,4 @@ target_compile_definitions(vulkan-tutorial
         STB_IMAGE_IMPLEMENTATION
         VULKAN_HPP_NO_EXCEPTIONS
         ASSET_PATH="${CMAKE_SOURCE_DIR}/assets/")
-cotire(vulkan-tutorial)
+#cotire(vulkan-tutorial)

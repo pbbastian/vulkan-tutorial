@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pbbastian/vulkan/unique_object.hpp>
+#include <pbbastian/vulkan/UniqueObject.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace pbbastian {

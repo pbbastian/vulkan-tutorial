@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "vkFunctions.hpp"
-#include <pbbastian/vulkan/unique_object.hpp>
+#include <pbbastian/vulkan/UniqueObject.hpp>
 #include <pbbastian/vulkan/util.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -79,7 +79,7 @@ private:
   vk::Queue graphicsQueue;
   vk::Queue presentQueue;
 
-  vkp::UniqueObject<vk::SwapchainKHR> swapChain{static_cast<VkDevice>(device)};
+  vkp::UniqueObject<vk::SwapchainKHR> swapChain{device};
   std::vector<vk::Image> swapChainImages;
   vk::Format swapChainImageFormat;
   vk::Extent2D swapChainExtent;

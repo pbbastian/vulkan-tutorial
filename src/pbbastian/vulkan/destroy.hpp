@@ -8,8 +8,6 @@
 namespace pbbastian {
 namespace vulkan {
 
-template <typename T> struct DeleterFunction {};
-
 inline void destroy(vk::Instance instance,
                     vk::AllocationCallbacks *pAllocator) {
   instance.destroy(pAllocator);
