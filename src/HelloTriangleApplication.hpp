@@ -10,6 +10,8 @@
 #include <pbbastian/vulkan/util.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include <tiny_obj_loader.h>
+
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -19,6 +21,7 @@
 #include <stdexcept>
 #include <vector>
 #include <array>
+#include <unordered_map>
 
 #include <pbbastian/stbi.hpp>
 
@@ -38,21 +41,6 @@ const std::vector<const char *> validationLayers = {
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
-
-const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0,
-
-                                       4, 5, 6, 6, 7, 4};
-
 #ifdef NDEBUG
 const bool enableValidationLayers = true;
 #else
@@ -64,6 +52,13 @@ const std::string assetPath(ASSET_PATH);
 #else
 const std::string assetPath("./");
 #endif
+
+const auto shaderPath = assetPath + "shaders/";
+const auto modelPath = assetPath + "models/";
+const auto texturePath = assetPath + "textures/";
+
+const auto modelFilePath = modelPath + "chalet.obj";
+const auto textureFilePath = texturePath + "chalet.jpg";
 
 namespace vkp = pbbastian::vulkan;
 
@@ -111,6 +106,8 @@ private:
   vkp::UniqueObject<vk::ImageView> textureImageView{device};
   vkp::UniqueObject<vk::Sampler> textureSampler{device};
 
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
   vkp::UniqueObject<vk::Buffer> vertexBuffer{device};
   vkp::UniqueObject<vk::DeviceMemory> vertexBufferMemory{device};
 
@@ -158,6 +155,7 @@ private:
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
+    loadModel();
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffer();
@@ -497,8 +495,8 @@ private:
   }
 
   void createGraphicsPipeline() {
-    auto vertShaderCode = readFile("shaders/vert.spv");
-    auto fragShaderCode = readFile("shaders/frag.spv");
+    auto vertShaderCode = readFile(shaderPath + "vert.spv");
+    auto fragShaderCode = readFile(shaderPath + "frag.spv");
 
     auto vertShaderModule = vkp::UniqueObject<vk::ShaderModule>{device};
     auto fragShaderModule = vkp::UniqueObject<vk::ShaderModule>{device};
@@ -663,7 +661,7 @@ private:
 
     std::string filename = assetPath + "textures/texture.jpg";
     int texWidth = 0, texHeight = 0, texChannels;
-    auto pixels = stbi::load(filename.c_str(), texWidth, texHeight, texChannels,
+    auto pixels = stbi::load(textureFilePath.c_str(), texWidth, texHeight, texChannels,
                              stbi::comp_type::rgb_alpha);
 
     vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(texWidth) *
@@ -920,6 +918,43 @@ private:
     throw std::runtime_error("failed to find supported format!");
   }
 
+  void loadModel() {
+    auto attrib = tinyobj::attrib_t{};
+    auto shapes = std::vector<tinyobj::shape_t>{};
+    auto materials = std::vector<tinyobj::material_t>{};
+    auto err = std::string{};
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, modelFilePath.c_str())) {
+      throw std::runtime_error(err);
+    }
+
+    auto uniqueVertices = std::unordered_map<Vertex, int>{};
+
+    for (const auto& shape : shapes) {
+      for (const auto& index : shape.mesh.indices) {
+        auto vertex = Vertex{};
+
+        vertex.pos = {
+          attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 0)],
+          attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 1)],
+          attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 2)]
+        };
+
+        vertex.texCoord = {
+          attrib.texcoords[static_cast<size_t>(2 * index.texcoord_index + 0)],
+          1.0f - attrib.texcoords[static_cast<size_t>(2 * index.texcoord_index + 1)]
+        };
+
+        if (uniqueVertices.count(vertex) == 0) {
+          uniqueVertices[vertex] = static_cast<int>(vertices.size());
+          vertices.push_back(vertex);
+        }
+
+        indices.push_back(static_cast<uint32_t>(uniqueVertices[vertex]));
+      }
+    }
+  }
+
   void createVertexBuffer() {
     vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
@@ -1174,7 +1209,7 @@ private:
       VkDeviceSize offsets[] = {0};
       commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-      commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+      commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
 
       commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                            pipelineLayout, 0, 1, &descriptorSet,
@@ -1495,7 +1530,7 @@ private:
   }
 
   static std::vector<char> readFile(const std::string &filename) {
-    std::ifstream file(assetPath + filename, std::ios::ate | std::ios::binary);
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
 

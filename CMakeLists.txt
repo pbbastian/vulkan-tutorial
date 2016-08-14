@@ -41,6 +41,7 @@ target_include_directories(vulkan-tutorial
     src/
     vendor/stb/
     vendor/Vulkan-Hpp/
+    vendor/tinyobjloader/
     ${VULKAN_INCLUDE_DIR}
     ${GLFW_INCLUDE_DIR}
     ${GLM_INCLUDE_DIR}
@@ -52,6 +53,7 @@ target_compile_definitions(vulkan-tutorial
         GLM_FORCE_RADIANS
         GLM_FORCE_DEPTH_ZERO_TO_ONE
         STB_IMAGE_IMPLEMENTATION
+        TINYOBJLOADER_IMPLEMENTATION
         VULKAN_HPP_NO_EXCEPTIONS
         ASSET_PATH="${CMAKE_SOURCE_DIR}/assets/")
 #cotire(vulkan-tutorial)
