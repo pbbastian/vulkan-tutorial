@@ -18,6 +18,7 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
+#include <array>
 
 #include <pbbastian/stbi.hpp>
 
@@ -1156,9 +1157,10 @@ private:
       renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);
       renderPassInfo.renderArea.extent = swapChainExtent;
 
-      auto clearValues = std::array<vk::ClearValue, 2>{};
-      clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-      clearValues[1].depthStencil = {1.0f, 0};
+      auto clearValues = std::array<vk::ClearValue, 2>{{
+        vk::ClearColorValue{std::array<float,4>{{0.0f, 0.0f, 0.0f, 1.0f}}},
+        vk::ClearDepthStencilValue{1.0f, 0}
+      }};
 
       renderPassInfo.clearValueCount = clearValues.size();
       renderPassInfo.pClearValues = clearValues.data();
@@ -1516,7 +1518,7 @@ private:
                                 uint64_t obj, size_t location, int32_t code,
                                 const char *layerPrefix, const char *msg,
                                 void *userData) {
-    std::cerr << "validation layer: " << msg << std::endl;
+    std::cerr << "Validation layer: " << msg << std::endl;
 
     return VK_FALSE;
   }
