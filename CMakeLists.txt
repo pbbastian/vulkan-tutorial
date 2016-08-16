@@ -29,6 +29,7 @@ target_sources(vulkan-tutorial PUBLIC
     src/Vertex.hpp
     src/vkFunctions.hpp
     src/VMappedMemory.hpp
+    src/settings.hpp
     src/pbbastian/stbi.hpp
     src/pbbastian/vulkan/UniqueObject.hpp
     src/pbbastian/vulkan/destroy.hpp

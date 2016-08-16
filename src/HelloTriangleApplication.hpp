@@ -5,25 +5,22 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "vkFunctions.hpp"
-#include <pbbastian/vulkan/UniqueObject.hpp>
-#include <pbbastian/vulkan/util.hpp>
-#include <vulkan/vulkan.hpp>
-
 #include <tiny_obj_loader.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <set>
 #include <stdexcept>
-#include <vector>
-#include <array>
 #include <unordered_map>
+#include <vector>
 
 #include <pbbastian/stbi.hpp>
+#include <pbbastian/vulkan/UniqueObject.hpp>
+#include <pbbastian/vulkan/util.hpp>
 
 #include "QueueFamilyIndices.hpp"
 #include "SwapChainSupportDetails.hpp"
@@ -31,6 +28,8 @@
 #include "VDeleter.hpp"
 #include "VMappedMemory.hpp"
 #include "Vertex.hpp"
+#include "settings.hpp"
+#include "vkFunctions.hpp"
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -41,21 +40,9 @@ const std::vector<const char *> validationLayers = {
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-#ifdef NDEBUG
-const bool enableValidationLayers = true;
-#else
-const bool enableValidationLayers = true;
-#endif
-
-#ifdef ASSET_PATH
-const std::string assetPath(ASSET_PATH);
-#else
-const std::string assetPath("./");
-#endif
-
-const auto shaderPath = assetPath + "shaders/";
-const auto modelPath = assetPath + "models/";
-const auto texturePath = assetPath + "textures/";
+const auto shaderPath = settings::assetPath + "shaders/";
+const auto modelPath = settings::assetPath + "models/";
+const auto texturePath = settings::assetPath + "textures/";
 
 const auto modelFilePath = modelPath + "chalet.obj";
 const auto textureFilePath = texturePath + "chalet.jpg";
@@ -177,6 +164,10 @@ private:
   }
 
   static void onWindowResized(GLFWwindow *window, int width, int height) {
+    if (width == 0 || height == 0) {
+      return;
+    }
+
     HelloTriangleApplication *app =
         reinterpret_cast<HelloTriangleApplication *>(
             glfwGetWindowUserPointer(window));
@@ -196,7 +187,7 @@ private:
   }
 
   void createInstance() {
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
+    if (settings::enableValidationLayers && !checkValidationLayerSupport()) {
       throw std::runtime_error(
           "Validation layers requested, but not available!");
     }
@@ -215,7 +206,7 @@ private:
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
-    if (enableValidationLayers) {
+    if (settings::enableValidationLayers) {
       createInfo.enabledLayerCount =
           static_cast<uint32_t>(validationLayers.size());
       createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -231,7 +222,7 @@ private:
   }
 
   void setupDebugCall() {
-    if (!enableValidationLayers) {
+    if (!settings::enableValidationLayers) {
       return;
     }
 
@@ -310,7 +301,7 @@ private:
         static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    if (enableValidationLayers) {
+    if (settings::enableValidationLayers) {
       createInfo.enabledLayerCount =
           static_cast<uint32_t>(validationLayers.size());
       createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -470,8 +461,8 @@ private:
   void createDescriptorSetLayout() {
     auto uboLayoutBinding = vk::DescriptorSetLayoutBinding{};
     uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
     uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
     uboLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
     auto samplerLayoutBinding = vk::DescriptorSetLayoutBinding{};
@@ -659,10 +650,9 @@ private:
   void createTextureImage() {
     namespace stbi = pbbastian::stbi;
 
-    std::string filename = assetPath + "textures/texture.jpg";
     int texWidth = 0, texHeight = 0, texChannels;
-    auto pixels = stbi::load(textureFilePath.c_str(), texWidth, texHeight, texChannels,
-                             stbi::comp_type::rgb_alpha);
+    auto pixels = stbi::load(textureFilePath.c_str(), texWidth, texHeight,
+                             texChannels, stbi::comp_type::rgb_alpha);
 
     vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(texWidth) *
                                static_cast<vk::DeviceSize>(texHeight) * 4;
@@ -924,26 +914,27 @@ private:
     auto materials = std::vector<tinyobj::material_t>{};
     auto err = std::string{};
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, modelFilePath.c_str())) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+                          modelFilePath.c_str())) {
       throw std::runtime_error(err);
     }
 
     auto uniqueVertices = std::unordered_map<Vertex, int>{};
 
-    for (const auto& shape : shapes) {
-      for (const auto& index : shape.mesh.indices) {
+    for (const auto &shape : shapes) {
+      for (const auto &index : shape.mesh.indices) {
         auto vertex = Vertex{};
 
         vertex.pos = {
-          attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 0)],
-          attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 1)],
-          attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 2)]
-        };
+            attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 0)],
+            attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 1)],
+            attrib.vertices[static_cast<size_t>(3 * index.vertex_index + 2)]};
 
         vertex.texCoord = {
-          attrib.texcoords[static_cast<size_t>(2 * index.texcoord_index + 0)],
-          1.0f - attrib.texcoords[static_cast<size_t>(2 * index.texcoord_index + 1)]
-        };
+            attrib.texcoords[static_cast<size_t>(2 * index.texcoord_index + 0)],
+            1.0f -
+                attrib.texcoords[static_cast<size_t>(2 * index.texcoord_index +
+                                                     1)]};
 
         if (uniqueVertices.count(vertex) == 0) {
           uniqueVertices[vertex] = static_cast<int>(vertices.size());
@@ -1192,10 +1183,9 @@ private:
       renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);
       renderPassInfo.renderArea.extent = swapChainExtent;
 
-      auto clearValues = std::array<vk::ClearValue, 2>{{
-        vk::ClearColorValue{std::array<float,4>{{0.0f, 0.0f, 0.0f, 1.0f}}},
-        vk::ClearDepthStencilValue{1.0f, 0}
-      }};
+      auto clearValues = std::array<vk::ClearValue, 2>{
+          {vk::ClearColorValue{std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f}}},
+           vk::ClearDepthStencilValue{1.0f, 0}}};
 
       renderPassInfo.clearValueCount = clearValues.size();
       renderPassInfo.pClearValues = clearValues.data();
@@ -1251,7 +1241,7 @@ private:
         1000.0f;
 
     UniformBufferObject ubo = {};
-    ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f),
+    ubo.model = glm::rotate(glm::mat4(), time * glm::radians(45.0f),
                             glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view =
         glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
@@ -1497,7 +1487,7 @@ private:
       extensions.push_back(glfwExtensions[i]);
     }
 
-    if (enableValidationLayers) {
+    if (settings::enableValidationLayers) {
       extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
     }
 
@@ -1533,9 +1523,7 @@ private:
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
-
-      throw std::runtime_error("failed to open file at " + assetPath +
-                               filename);
+      throw std::runtime_error("failed to open file at " + filename);
     }
 
     auto fileSize = static_cast<size_t>(file.tellg());
